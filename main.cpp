@@ -6,7 +6,7 @@
 #include "matrix_bsr.hpp"
 
 int main() {
-    std::string filename = "test1.mtx";
+    std::string filename = "test2.mtx";
     FormatCOO A = load_mtx(filename);
 
     std::vector<double> x(A.num_cols, 1.0); 
@@ -19,6 +19,7 @@ int main() {
         std::cout << "y[" << i << "] = " << res[i] << std::endl;
     }
     */
+    
 
     // --- CSR ---
     //FormatCSR A_csr = convert_coo_to_csr(A);
@@ -41,13 +42,14 @@ int main() {
 
     // --- BSR ---
     
-    MatrixBSR A_bsr = convert_coo_to_bsr(A, 2);
+    MatrixBSR A_bsr = convert_coo_to_bsr(A, 3);
     std::vector<double> y_bsr = spmv_bsr(A_bsr, x);
     
     std::cout << "--- Result y = A * x (Format BSR) ---" << std::endl;
     for (size_t i = 0; i < y_bsr.size(); ++i) {
         std::cout << "y[" << i << "] = " << y_bsr[i] << std::endl;
     }
+        
     
 
     return 0;
