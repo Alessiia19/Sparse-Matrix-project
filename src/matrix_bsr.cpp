@@ -1,5 +1,7 @@
 #include "matrix_bsr.hpp"
 #include <map>
+#include <iostream>
+#include <algorithm>
 
 MatrixBSR convert_coo_to_bsr(const FormatCOO& coo, int block_size) {
     MatrixBSR bsr;
@@ -7,90 +9,118 @@ MatrixBSR convert_coo_to_bsr(const FormatCOO& coo, int block_size) {
     bsr.num_cols = coo.num_cols;
     bsr.block_size = block_size;
 
-    bsr.num_block_rows = (coo.num_rows + block_size - 1) / block_size;
+    // Calcolo del numero di blocchi (per righe e per colonne)
+    // VEDI SE CAMBIARE COME SI CALCOLA BLOCK SIZE
+    bsr.num_block_rows = (coo.num_rows + block_size - 1) / block_size; 
     bsr.num_block_cols = (coo.num_cols + block_size - 1) / block_size;
 
-    // Struttura temporanea per raggruppare gli elementi in blocchi densi
-    std::vector<std::map<int, std::vector<double>>> block_rows(bsr.num_block_rows);
+    /* Block_grid: array di supporto che servirà per creare gli array: 
+        - values
+        - columns
+        - pointerB
+        - pointerE 
+
+      Ogni cella dell'array rappresenta una riga di blocchi e ciascun blocco in essa è mappato con:
+      - int: indice della colonna del blocco
+      - vector<double>: array contenente i valori degli elementi all'interno del blocco
+     */
+    std::vector<std::map<int, std::vector<double>>> block_grid(bsr.num_block_rows);
 
     for (int i = 0; i < coo.nnz; ++i) {
-        int r = coo.row_indices[i];
-        int c = coo.col_indices[i];
-        double v = coo.values[i];
+        int row = coo.row_indices[i];
+        int col = coo.col_indices[i];
+        double val = coo.values[i];
 
-        int br = r / block_size;
-        int bc = c / block_size;
+        // Indici (globali) di riga e colonna del blocco
+        int block_row_idx = row / block_size;
+        int block_col_idx = col / block_size;
 
-        int local_r = r % block_size;
-        int local_c = c % block_size;
+        // Indici (locali) di riga e colonna all'interno del blocco
+        // Compresi in un intervallo [0, block_size - 1]
+        int local_row_idx = row % block_size;
+        int local_col_idx = col % block_size;
 
-        if (block_rows[br].find(bc) == block_rows[br].end()) {
-            block_rows[br][bc].assign(block_size * block_size, 0.0);
+        // Se il blocco non esiste già alloca lo spazio necessario inizializzandolo a 0.0
+        if (block_grid[block_row_idx][block_col_idx].empty()) {
+            block_grid[block_row_idx][block_col_idx].assign(block_size * block_size, 0.0);
         }
 
-        int local_idx = local_r * block_size + local_c;
-        block_rows[br][bc][local_idx] = v;
+        // Indice locale dell'elemento all'interno del blocco
+        int in_block_idx = local_row_idx * block_size + local_col_idx;
+        block_grid[block_row_idx][block_col_idx][in_block_idx] = val;
     }
 
-    // Ridimensioniamo i vettori pointerB e pointerE in base al numero di righe di blocchi
+    
+    // Costruzione dei 4 vettori del formato BSR 
     bsr.pointerB.resize(bsr.num_block_rows);
     bsr.pointerE.resize(bsr.num_block_rows);
 
-    int current_block_idx = 0;
+    int current_block_idx = 0; 
 
-    for (int br = 0; br < bsr.num_block_rows; ++br) {
-        int blocks_in_row = block_rows[br].size();
+    for (int block_row_idx = 0; block_row_idx < bsr.num_block_rows; ++block_row_idx) {
+        int blocks_in_row = block_grid[block_row_idx].size();
 
-        // pointerB segna l'indice di partenza del primo blocco di questa riga
-        bsr.pointerB[br] = current_block_idx;
+        // Indice di partenza del primo blocco della riga corrente nel vettore columns
+        bsr.pointerB[block_row_idx] = current_block_idx;
         
-        // pointerE segna l'indice immediatamente successivo all'ultimo blocco di questa riga
-        bsr.pointerE[br] = current_block_idx + blocks_in_row;
+        // Indice successivo all'ultimo blocco della riga corrente
+        bsr.pointerE[block_row_idx] = current_block_idx + blocks_in_row;
 
-        // Avanziamo l'indice globale per la riga successiva
         current_block_idx += blocks_in_row;
         bsr.nnz_blocks += blocks_in_row;
 
-        // Inseriamo gli indici delle colonne e i valori dei blocchi
-        for (const auto& [bc, block_values] : block_rows[br]) {
-            bsr.b_col_indices.push_back(bc);
-            bsr.b_values.insert(bsr.b_values.end(), block_values.begin(), block_values.end());
+        
+        for (const auto& [block_col_idx, block_values] : block_grid[block_row_idx]) {
+            bsr.columns.push_back(block_col_idx);
+            
+            for (double v : block_values) {
+                bsr.values.push_back(v);
+            }
         }
     }
 
     return bsr;
 }
 
+
+// Matrix-vector product
 std::vector<double> spmv_bsr(const MatrixBSR& A, const std::vector<double>& x) {
     std::vector<double> y(A.num_rows, 0.0);
-    int b = A.block_size;
+    int block_size = A.block_size;
 
-    for (int br = 0; br < A.num_block_rows; ++br) {
-        // Usiamo pointerB per l'inizio e pointerE per il limite superiore
-        int block_row_start = A.pointerB[br];
-        int block_row_end = A.pointerE[br];
+    for (int block_row_idx = 0; block_row_idx < A.num_block_rows; ++block_row_idx) {
+        
+        int row_start = A.pointerB[block_row_idx];
+        int row_end = A.pointerE[block_row_idx];
 
-        for (int j = block_row_start; j < block_row_end; ++j) {
-            int bc = A.b_col_indices[j];
-            int val_offset = j * b * b;
+        for (int i = row_start; i < row_end; ++i) {
+            int block_col_idx = A.columns[i]; 
+            
+            // Ogni blocco ha dimensione b*b: per saltare al i-esimo blocco dobbiamo saltare i * b^2 valori
+            int value_idx = i * block_size * block_size; 
 
-            for (int local_r = 0; local_r < b; ++local_r) {
-                int global_r = br * b + local_r;
-                if (global_r >= A.num_rows) continue;
-
+            
+            for (int local_row_idx = 0; local_row_idx < block_size; ++local_row_idx) {
+                
+                // Indice globale della riga nella matrice originale
+                int global_row_idx = block_row_idx * block_size + local_row_idx;
+                
                 double sum = 0.0;
-                for (int local_c = 0; local_c < b; ++local_c) {
-                    int global_c = bc * b + local_c;
+                for (int local_col_idx = 0; local_col_idx < block_size; ++local_col_idx) {
                     
-                    if (global_c < A.num_cols) {
-                        int local_idx = val_offset + (local_r * b + local_c);
-                        sum += A.b_values[local_idx] * x[global_c];
-                    }
+                    // Indice globale della colonna nella matrice originale
+                    int global_col_idx = block_col_idx * block_size + local_col_idx;
+                    
+                    // Indice globale del valore in values
+                    int global_value_idx = value_idx + (local_row_idx * block_size + local_col_idx);
+                    sum += A.values[global_value_idx] * x[global_col_idx];
+                    
                 }
-                y[global_r] += sum;
+                
+                y[global_row_idx] += sum;
             }
         }
     }
-
+    
     return y;
 }

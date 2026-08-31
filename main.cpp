@@ -6,17 +6,19 @@
 #include "matrix_bsr.hpp"
 
 int main() {
-    std::string filename = "test.mtx";
+    std::string filename = "test1.mtx";
     FormatCOO A = load_mtx(filename);
 
     std::vector<double> x(A.num_cols, 1.0); 
 
     // --- COO ---   
-    //std::vector<double> res = spmv_coo(A, x);
-    //std::cout << "--- Result y = A * x (Format COO) ---" << std::endl;
-    //for (size_t i = 0; i < res.size(); ++i) {
-        //std::cout << "y[" << i << "] = " << res[i] << std::endl;
-    //}
+    /*
+    std::vector<double> res = spmv_coo(A, x);
+    std::cout << "--- Result y = A * x (Format COO) ---" << std::endl;
+    for (size_t i = 0; i < res.size(); ++i) {
+        std::cout << "y[" << i << "] = " << res[i] << std::endl;
+    }
+    */
 
     // --- CSR ---
     //FormatCSR A_csr = convert_coo_to_csr(A);
@@ -37,13 +39,16 @@ int main() {
     }
     */
 
-    MatrixBSR A_bsr = convert_coo_to_bsr(A, 1);
+    // --- BSR ---
+    
+    MatrixBSR A_bsr = convert_coo_to_bsr(A, 2);
     std::vector<double> y_bsr = spmv_bsr(A_bsr, x);
-
+    
     std::cout << "--- Result y = A * x (Format BSR) ---" << std::endl;
     for (size_t i = 0; i < y_bsr.size(); ++i) {
         std::cout << "y[" << i << "] = " << y_bsr[i] << std::endl;
     }
+    
 
     return 0;
 
