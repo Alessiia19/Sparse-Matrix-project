@@ -10,8 +10,8 @@ struct FormatELL
     int num_cols = 0;
     int max_nnz_per_row = 0;
 
-    std::vector<int> jcoef; // Dimensione: num_rows * max_nnz_per_row
-    std::vector<double> coef;   // Dimensione: num_rows * max_nnz_per_row
+    std::vector<int> jcoef; // Dim: num_rows * max_nnz_per_row
+    std::vector<double> coef;   // Dim: num_rows * max_nnz_per_row
 };
 
 FormatELL convert_coo_to_ell(const FormatCOO& coo);

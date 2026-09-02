@@ -15,8 +15,12 @@ size_t get_memory_ell(const FormatELL& A) {
     return A.jcoef.size() * sizeof(int) + A.coef.size() * sizeof(double);
 }
 
-size_t get_memory_bsr(const MatrixBSR& A) {
+size_t get_memory_bsr(const FormatBSR& A) {
     return A.pointerB.size() * sizeof(int) + A.pointerE.size() * sizeof(int) + A.columns.size() * sizeof(int) + A.values.size() * sizeof(double);
+}
+
+size_t get_memory_hyb(const FormatHYB& A) {
+    return get_memory_ell(A.ell) + get_memory_coo(A.coo);
 }
 
 
@@ -27,7 +31,7 @@ BenchmarkResult run_benchmark(
     int nnz,
     int num_rows,
     int num_cols,
-    double density,
+    double allocation_ratio,
     std::function<std::vector<double>()> spmv_func,
     int warmup_iterations,
     int test_iterations
@@ -64,7 +68,7 @@ BenchmarkResult run_benchmark(
     res.time_ms = avg_time_ms;
     res.gflops = gflops;
     res.bandwidth_gbs = bandwidth_gbs;
-    res.density = density;
+    res.allocation_ratio = allocation_ratio;
 
     return res;
 }

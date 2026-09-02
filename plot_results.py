@@ -21,7 +21,7 @@ def plot_benchmarks(csv_filepath="benchmark_results.csv", output_dir="plots"):
         ("Time_ms", "Tempo Esecuzione SpMV (ms)", "ms", "chart_time.png"),
         ("GFLOPS", "Performance SpMV (GFLOPS)", "GFLOPS", "chart_gflops.png"),
         ("Bandwidth_GBs", "Banda Passante Effettiva (GB/s)", "GB/s", "chart_bandwidth.png"),
-        ("Density", "Fattore di Padding / Density", "Rapporto (Stronzi/Utili)", "chart_density.png")
+        ("Allocation_Ratio", "Fattore di Padding / Allocation Ratio", "Rapporto (Stronzi/Utili)", "chart_allocation_ratio.png")
     ]
     
     matrices = df["Matrix"].unique()

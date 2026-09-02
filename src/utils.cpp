@@ -5,7 +5,7 @@
 void init_csv(const std::string& csv_filename) {
     std::ofstream file(csv_filename, std::ios::trunc);
     if (file.is_open()) {
-        file << "Matrix,Format,Memory_MB,Time_ms,GFLOPS,Bandwidth_GBs,Density\n";
+        file << "Matrix,Format,Memory_MB,Time_ms,GFLOPS,Bandwidth_GBs,Allocation_Ratio\n";
         file.close();
     }
 }
@@ -19,7 +19,7 @@ void append_result_csv(const std::string& csv_filename, const BenchmarkResult& r
              << res.time_ms << ","
              << res.gflops << ","
              << res.bandwidth_gbs << ","
-             << res.density << "\n";
+             << res.allocation_ratio << "\n";
         file.close();
     }
 }

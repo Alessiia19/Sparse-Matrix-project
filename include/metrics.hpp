@@ -8,6 +8,7 @@
 #include "matrix_csr.hpp"
 #include "matrix_ell.hpp"
 #include "matrix_bsr.hpp"
+#include "matrix_hyb.hpp"
 
 struct BenchmarkResult {
     std::string matrix;
@@ -17,14 +18,15 @@ struct BenchmarkResult {
     double time_ms = 0.0;
     double gflops = 0.0;
     double bandwidth_gbs = 0.0;
-    double density = 1.0;
+    double allocation_ratio = 1.0;
 };
 
 // Memory usage calculation in bytes
 size_t get_memory_coo(const FormatCOO& A);
 size_t get_memory_csr(const FormatCSR& A);
 size_t get_memory_ell(const FormatELL& A);
-size_t get_memory_bsr(const MatrixBSR& A);
+size_t get_memory_bsr(const FormatBSR& A);
+size_t get_memory_hyb(const FormatHYB& A);
 
 // SpMV benchmark execution including warm-up
 BenchmarkResult run_benchmark(const std::string& matrix, 
@@ -33,7 +35,7 @@ BenchmarkResult run_benchmark(const std::string& matrix,
     int nnz,
     int num_rows,
     int num_cols,
-    double density,
+    double allocation_ratio,
     std::function<std::vector<double>()> spmv_func,
     int warmup_iterations = 10,
     int test_iterations = 20

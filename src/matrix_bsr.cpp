@@ -3,8 +3,8 @@
 #include <iostream>
 #include <algorithm>
 
-MatrixBSR convert_coo_to_bsr(const FormatCOO& coo, int block_size) {
-    MatrixBSR bsr;
+FormatBSR convert_coo_to_bsr(const FormatCOO& coo, int block_size) {
+    FormatBSR bsr;
     bsr.num_rows = coo.num_rows;
     bsr.num_cols = coo.num_cols;
     bsr.block_size = block_size;
@@ -84,7 +84,7 @@ MatrixBSR convert_coo_to_bsr(const FormatCOO& coo, int block_size) {
 
 
 // Matrix-vector product
-std::vector<double> spmv_bsr(const MatrixBSR& A, const std::vector<double>& x) {
+std::vector<double> spmv_bsr(const FormatBSR& A, const std::vector<double>& x) {
     std::vector<double> y(A.num_rows, 0.0);
     int block_size = A.block_size;
 

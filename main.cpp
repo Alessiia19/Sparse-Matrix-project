@@ -5,6 +5,7 @@
 #include "matrix_csr.hpp"
 #include "matrix_ell.hpp"
 #include "matrix_bsr.hpp"
+#include "matrix_hyb.hpp"
 #include "metrics.hpp"
 #include "utils.hpp"
 
@@ -13,7 +14,6 @@ int main() {
     std::string matrix_label = "test2";
     std::string csv_file = "benchmark_results.csv";
 
-    // Inizializza il file CSV con le intestazioni
     init_csv(csv_file);
 
     // Caricamento Matrice Baseline (COO)
@@ -62,8 +62,8 @@ int main() {
     {
         FormatELL A_ell = convert_coo_to_ell(A_coo);
         size_t mem = get_memory_ell(A_ell);
-        double density = static_cast<double>(A_ell.coef.size()) / A_coo.nnz;
-        auto res = run_benchmark(matrix_label, "ELLPACK", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, density,
+        double allocation_ratio = static_cast<double>(A_ell.coef.size()) / A_coo.nnz;
+        auto res = run_benchmark(matrix_label, "ELLPACK", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio,
             [&]() { return spmv_ell(A_ell, x); });
         append_result_csv(csv_file, res);
         std::cout << "[ELL] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
@@ -79,10 +79,10 @@ int main() {
     // --- 4. BSR BENCHMARK ---
     {
         int block_size = 3;
-        MatrixBSR A_bsr = convert_coo_to_bsr(A_coo, block_size);
+        FormatBSR A_bsr = convert_coo_to_bsr(A_coo, block_size);
         size_t mem = get_memory_bsr(A_bsr);
-        double density = static_cast<double>(A_bsr.values.size()) / A_coo.nnz;
-        auto res = run_benchmark(matrix_label, "BSR", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, density,
+        double allocation_ratio = static_cast<double>(A_bsr.values.size()) / A_coo.nnz;
+        auto res = run_benchmark(matrix_label, "BSR", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio,
             [&]() { return spmv_bsr(A_bsr, x); });
         append_result_csv(csv_file, res);
         std::cout << "[BSR] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
@@ -91,6 +91,28 @@ int main() {
         std::cout << "--- Result y = A * x (Format BSR) ---" << std::endl;
         for (size_t i = 0; i < y_bsr.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_bsr[i] << std::endl;
+        }
+    }
+
+    // --- HYB BENCHMARK ---
+    {
+        
+        FormatHYB A_hyb = convert_coo_to_hyb(A_coo);
+        size_t mem = get_memory_ell(A_hyb.ell) + get_memory_coo(A_hyb.coo);
+        
+        size_t total_elements_allocated = A_hyb.ell.coef.size() + A_hyb.coo.values.size();
+        double allocation_ratio = static_cast<double>(total_elements_allocated) / A_coo.nnz;
+        
+        auto res = run_benchmark(matrix_label, "HYB", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio,
+            [&]() { return spmv_hyb(A_hyb, x); });
+        append_result_csv(csv_file, res);
+        
+        std::cout << "[HYB] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
+        
+        std::vector<double> y_hyb = spmv_hyb(A_hyb, x);
+        std::cout << "--- Result y = A * x (Format HYB) ---" << std::endl;
+        for (size_t i = 0; i < y_hyb.size(); ++i) {
+            std::cout << "y[" << i << "] = " << y_hyb[i] << std::endl;
         }
     }
 

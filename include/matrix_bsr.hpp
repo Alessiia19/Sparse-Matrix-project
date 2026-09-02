@@ -4,7 +4,7 @@
 #include <vector>
 #include "matrix_coo.hpp"
 
-struct MatrixBSR {
+struct FormatBSR {
     int num_rows = 0;
     int num_cols = 0;
     int block_size = 1;       // Dimensione b del blocco (es. 2 per 2x2) 
@@ -19,7 +19,7 @@ struct MatrixBSR {
     std::vector<double> values;   // Valori raggruppati in sottomatrici b x b
 };
 
-MatrixBSR convert_coo_to_bsr(const FormatCOO& coo, int block_size);
-std::vector<double> spmv_bsr(const MatrixBSR& A, const std::vector<double>& x);
+FormatBSR convert_coo_to_bsr(const FormatCOO& coo, int block_size);
+std::vector<double> spmv_bsr(const FormatBSR& A, const std::vector<double>& x);
 
 #endif
