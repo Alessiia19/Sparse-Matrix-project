@@ -6,6 +6,7 @@
 #include "matrix_ell.hpp"
 #include "matrix_bsr.hpp"
 #include "matrix_hyb.hpp"
+#include "matrix_bce.hpp"
 #include "metrics.hpp"
 #include "utils.hpp"
 
@@ -113,6 +114,27 @@ int main() {
         std::cout << "--- Result y = A * x (Format HYB) ---" << std::endl;
         for (size_t i = 0; i < y_hyb.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_hyb[i] << std::endl;
+        }
+    }
+
+    // --- BCE BENCHMARK ---
+    {
+        FormatBCE A_bce = convert_coo_to_bce(A_coo);
+        size_t mem = get_memory_ell(A_bce.ell) + get_memory_csr(A_bce.csr);
+        
+        size_t total_elements_allocated = A_bce.ell.coef.size() + A_bce.csr.values.size();
+        double allocation_ratio = static_cast<double>(total_elements_allocated) / A_coo.nnz;
+        
+        auto res = run_benchmark(matrix_label, "BCE", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio,
+            [&]() { return spmv_bce(A_bce, x); });
+        append_result_csv(csv_file, res);
+        
+        std::cout << "[BCE] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
+        
+        std::vector<double> y_bce = spmv_bce(A_bce, x);
+        std::cout << "--- Result y = A * x (Format BCE) ---" << std::endl;
+        for (size_t i = 0; i < y_bce.size(); ++i) {
+            std::cout << "y[" << i << "] = " << y_bce[i] << std::endl;
         }
     }
 

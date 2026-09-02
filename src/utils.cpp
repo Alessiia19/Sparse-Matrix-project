@@ -1,6 +1,7 @@
 #include "utils.hpp"
 #include <iostream>
 #include <fstream>
+#include <cmath>
 
 void init_csv(const std::string& csv_filename) {
     std::ofstream file(csv_filename, std::ios::trunc);
@@ -22,4 +23,9 @@ void append_result_csv(const std::string& csv_filename, const BenchmarkResult& r
              << res.allocation_ratio << "\n";
         file.close();
     }
+}
+
+int get_k(const FormatCOO& coo) {
+    double average_nnz_per_row = static_cast<double>(coo.nnz) / coo.num_rows;
+    return static_cast<int>(std::ceil(average_nnz_per_row));
 }

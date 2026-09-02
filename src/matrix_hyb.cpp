@@ -1,11 +1,5 @@
 #include "matrix_hyb.hpp"
-#include <cmath>
-
-// Calculate average nnz per row
-int get_k(const FormatCOO& coo) {
-    double average_nnz_per_row = static_cast<double>(coo.nnz) / coo.num_rows;
-    return static_cast<int>(std::ceil(average_nnz_per_row));
-}
+#include "utils.hpp"
 
 FormatHYB convert_coo_to_hyb(const FormatCOO& coo) {
     FormatHYB hyb;
