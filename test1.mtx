@@ -1,5 +1,5 @@
 %%MatrixMarket matrix coordinate real general
-4 4 12
+5 5 14
 1 1 101
 1 2 102
 1 4 103
@@ -12,4 +12,6 @@
 4 1 113
 4 2 114
 4 4 115
-%% Moltiplicazione matrice-vettore risultato: y[0] = 306  y[1] = 422 y[2] = 219 y[3] = 342
+5 1 116
+5 2 100
+%% Moltiplicazione matrice-vettore risultato: y[0] = 306  y[1] = 422 y[2] = 219 y[3] = 342 y[4] = 216

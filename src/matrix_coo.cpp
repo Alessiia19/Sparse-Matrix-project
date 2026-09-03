@@ -12,9 +12,17 @@ FormatCOO load_mtx(const std::string& filename) {
         exit(EXIT_FAILURE);
     }
 
-    // Reads the first line (skipping comments)
+    // Reads the header
     std::string line;
+    bool is_symmetric = false;
+    bool is_pattern = false;
+
     while (std::getline(file, line)) {
+        if (line.empty()) continue; 
+
+        if (line.find("symmetric") != std::string::npos) is_symmetric = true;
+        if (line.find("pattern") != std::string::npos) is_pattern = true;
+
         if (line[0] != '%') break;
     }
 
@@ -22,21 +30,43 @@ FormatCOO load_mtx(const std::string& filename) {
     FormatCOO matrix;
     std::stringstream ss(line);
     ss >> matrix.num_rows >> matrix.num_cols >> matrix.nnz;
+    
+    size_t estimated_nnz; 
+    if (is_symmetric) {
+        estimated_nnz = static_cast<size_t>(matrix.nnz) * 2;
+    } else {
+        estimated_nnz = static_cast<size_t>(matrix.nnz);
+    }
 
-    matrix.row_indices.reserve(matrix.nnz);
-    matrix.col_indices.reserve(matrix.nnz);
-    matrix.values.reserve(matrix.nnz);
+    matrix.row_indices.reserve(estimated_nnz);
+    matrix.col_indices.reserve(estimated_nnz);
+    matrix.values.reserve(estimated_nnz);
 
     // Put the values in the corresponding vectors
     int row, column;
     double value;
-    for (int i = 0; i < matrix.nnz; ++i) {
-        file >> row >> column >> value;
-        matrix.row_indices.push_back(row - 1);
-        matrix.col_indices.push_back(column - 1);
+    while (file >> row >> column) {
+        if (!is_pattern) {
+            file >> value;
+        } else {
+            value = 1.0; 
+        }
+
+        int r = row - 1;
+        int c = column - 1;
+
+        matrix.row_indices.push_back(r);
+        matrix.col_indices.push_back(c);
         matrix.values.push_back(value);
+
+        if (is_symmetric && r != c) {
+            matrix.row_indices.push_back(c);
+            matrix.col_indices.push_back(r);
+            matrix.values.push_back(value);
+        }
     }
 
+    matrix.nnz = static_cast<int>(matrix.values.size());
     file.close();
     return matrix;
 }

@@ -19,11 +19,17 @@ int main() {
 
     // Caricamento Matrice Baseline (COO)
     FormatCOO A_coo = load_mtx(filename);
+
+    sort_coo_matrix(A_coo);
+    //print_coo_matrix(A_coo);
+
     std::vector<double> x(A_coo.num_cols, 1.0);
 
     std::cout << "Matrice " << matrix_label << " caricata: "
               << A_coo.num_rows << "x" << A_coo.num_cols 
               << ", NNZ = " << A_coo.nnz << "\n\n";
+    
+    std::vector<double> y_coo;
 
     // --- 1. COO BENCHMARK ---
     {
@@ -33,14 +39,14 @@ int main() {
         append_result_csv(csv_file, res);
         std::cout << "[COO] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
 
-        std::vector<double> y_coo = spmv_coo(A_coo, x);
+        y_coo = spmv_coo(A_coo, x);
         std::cout << "--- Result y = A * x (Format COO) ---" << std::endl;
         for (size_t i = 0; i < y_coo.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_coo[i] << std::endl;
         }
     }
     
-    
+        
 
     // --- 2. CSR BENCHMARK ---
     {
@@ -56,16 +62,17 @@ int main() {
         for (size_t i = 0; i < y_csr.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_csr[i] << std::endl;
         }
+        sanity_check(y_coo, y_csr, "CSR");
     }
 
-
+    
     // --- 3. ELLPACK BENCHMARK ---
     {
         FormatELL A_ell = convert_coo_to_ell(A_coo);
         size_t mem = get_memory_ell(A_ell);
         double allocation_ratio = static_cast<double>(A_ell.coef.size()) / A_coo.nnz;
         auto res = run_benchmark(matrix_label, "ELLPACK", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio,
-            [&]() { return spmv_ell(A_ell, x); });
+        [&]() { return spmv_ell(A_ell, x); });
         append_result_csv(csv_file, res);
         std::cout << "[ELL] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
         
@@ -74,12 +81,14 @@ int main() {
         for (size_t i = 0; i < y_ell.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_ell[i] << std::endl;
         }
+        sanity_check(y_coo, y_ell, "ELL");
     }
+    
 
 
     // --- 4. BSR BENCHMARK ---
     {
-        int block_size = 3;
+        int block_size = 2;
         FormatBSR A_bsr = convert_coo_to_bsr(A_coo, block_size);
         size_t mem = get_memory_bsr(A_bsr);
         double allocation_ratio = static_cast<double>(A_bsr.values.size()) / A_coo.nnz;
@@ -93,19 +102,22 @@ int main() {
         for (size_t i = 0; i < y_bsr.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_bsr[i] << std::endl;
         }
+        sanity_check(y_coo, y_bsr, "BSR");
     }
 
+
+    
     // --- HYB BENCHMARK ---
     {
         
-        FormatHYB A_hyb = convert_coo_to_hyb(A_coo);
+    FormatHYB A_hyb = convert_coo_to_hyb(A_coo);
         size_t mem = get_memory_ell(A_hyb.ell) + get_memory_coo(A_hyb.coo);
         
         size_t total_elements_allocated = A_hyb.ell.coef.size() + A_hyb.coo.values.size();
         double allocation_ratio = static_cast<double>(total_elements_allocated) / A_coo.nnz;
         
         auto res = run_benchmark(matrix_label, "HYB", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio,
-            [&]() { return spmv_hyb(A_hyb, x); });
+        [&]() { return spmv_hyb(A_hyb, x); });
         append_result_csv(csv_file, res);
         
         std::cout << "[HYB] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
@@ -115,7 +127,9 @@ int main() {
         for (size_t i = 0; i < y_hyb.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_hyb[i] << std::endl;
         }
+        sanity_check(y_coo, y_hyb, "HYB");
     }
+    
 
     // --- BCE BENCHMARK ---
     {
@@ -136,7 +150,10 @@ int main() {
         for (size_t i = 0; i < y_bce.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_bce[i] << std::endl;
         }
+        sanity_check(y_coo, y_bce, "BCE");
     }
+
+    
 
 
     std::cout << "\nBenchmark completato. Dati salvati in " << csv_file << "\n";

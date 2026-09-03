@@ -9,10 +9,12 @@ FormatBSR convert_coo_to_bsr(const FormatCOO& coo, int block_size) {
     bsr.num_cols = coo.num_cols;
     bsr.block_size = block_size;
 
-    // Calculation of the number of blocks (for rows and columns)
-    // VEDI SE CAMBIARE COME SI CALCOLA BLOCK SIZE
-    bsr.num_block_rows = coo.num_rows / block_size; 
-    bsr.num_block_cols = coo.num_cols / block_size;
+    // Calculation of the number of blocks (for rows and columns) 
+    bsr.num_block_rows = (coo.num_rows + block_size - 1) / block_size; 
+    bsr.num_block_cols = (coo.num_cols + block_size - 1) / block_size;
+
+    bsr.num_rows_with_padding = bsr.num_block_rows * block_size;
+    bsr.num_cols_with_padding = bsr.num_block_cols * block_size;
 
     /* Block_grid: helper array used to construct the following vectors: 
         - values
@@ -85,8 +87,16 @@ FormatBSR convert_coo_to_bsr(const FormatCOO& coo, int block_size) {
 
 // Matrix-vector product
 std::vector<double> spmv_bsr(const FormatBSR& A, const std::vector<double>& x) {
-    std::vector<double> y(A.num_rows, 0.0);
+    std::vector<double> y(A.num_rows_with_padding, 0.0);
     int block_size = A.block_size;
+
+    const std::vector<double>* x_pointer = &x;
+    std::vector<double> x_padded;
+    if (x.size() < static_cast<size_t>(A.num_cols_with_padding)) {
+        x_padded = x;
+        x_padded.resize(A.num_cols_with_padding, 0.0);
+        x_pointer = &x_padded;
+    }
 
     for (int block_row_idx = 0; block_row_idx < A.num_block_rows; ++block_row_idx) {
         
@@ -113,7 +123,7 @@ std::vector<double> spmv_bsr(const FormatBSR& A, const std::vector<double>& x) {
                     
                     // Global value index in the values array
                     int global_value_idx = value_idx + (local_row_idx * block_size + local_col_idx);
-                    sum += A.values[global_value_idx] * x[global_col_idx];
+                    sum += A.values[global_value_idx] * (*x_pointer)[global_col_idx];
                     
                 }
                 
@@ -121,6 +131,6 @@ std::vector<double> spmv_bsr(const FormatBSR& A, const std::vector<double>& x) {
             }
         }
     }
-    
+    y.resize(A.num_rows);
     return y;
 }
