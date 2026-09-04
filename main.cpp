@@ -11,8 +11,8 @@
 #include "utils.hpp"
 
 int main() {
-    std::string filename = "test2.mtx";
-    std::string matrix_label = "test2";
+    std::string filename = "west0497.mtx";
+    std::string matrix_label = "west0497";
     std::string csv_file = "benchmark_results.csv";
 
     init_csv(csv_file);
@@ -40,14 +40,17 @@ int main() {
         std::cout << "[COO] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
 
         y_coo = spmv_coo(A_coo, x);
+        /*
         std::cout << "--- Result y = A * x (Format COO) ---" << std::endl;
         for (size_t i = 0; i < y_coo.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_coo[i] << std::endl;
         }
+        */
     }
     
         
-
+    
+    
     // --- 2. CSR BENCHMARK ---
     {
         FormatCSR A_csr = convert_coo_to_csr(A_coo);
@@ -58,11 +61,15 @@ int main() {
         std::cout << "[CSR] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
         
         std::vector<double> y_csr = spmv_csr(A_csr, x);
+        
+        /*
         std::cout << "--- Result y = A * x (Format CSR) ---" << std::endl;
         for (size_t i = 0; i < y_csr.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_csr[i] << std::endl;
         }
-        sanity_check(y_coo, y_csr, "CSR");
+        */
+        
+        sanity_check(y_coo, y_csr, "CSR", 1e-9);
     }
 
     
@@ -77,18 +84,21 @@ int main() {
         std::cout << "[ELL] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
         
         std::vector<double> y_ell = spmv_ell(A_ell, x);
+        /*
         std::cout << "--- Result y = A * x (Format ELL) ---" << std::endl;
         for (size_t i = 0; i < y_ell.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_ell[i] << std::endl;
         }
-        sanity_check(y_coo, y_ell, "ELL");
+        */
+        
+        sanity_check(y_coo, y_ell, "ELL", 1e-9);
     }
     
-
+    
 
     // --- 4. BSR BENCHMARK ---
     {
-        int block_size = 2;
+        int block_size = 4;
         FormatBSR A_bsr = convert_coo_to_bsr(A_coo, block_size);
         size_t mem = get_memory_bsr(A_bsr);
         double allocation_ratio = static_cast<double>(A_bsr.values.size()) / A_coo.nnz;
@@ -98,14 +108,17 @@ int main() {
         std::cout << "[BSR] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
         
         std::vector<double> y_bsr = spmv_bsr(A_bsr, x);
+        /*
         std::cout << "--- Result y = A * x (Format BSR) ---" << std::endl;
         for (size_t i = 0; i < y_bsr.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_bsr[i] << std::endl;
         }
-        sanity_check(y_coo, y_bsr, "BSR");
+        */
+        sanity_check(y_coo, y_bsr, "BSR", 1e-9);
     }
 
 
+    
     
     // --- HYB BENCHMARK ---
     {
@@ -123,11 +136,14 @@ int main() {
         std::cout << "[HYB] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
         
         std::vector<double> y_hyb = spmv_hyb(A_hyb, x);
+        /*
         std::cout << "--- Result y = A * x (Format HYB) ---" << std::endl;
         for (size_t i = 0; i < y_hyb.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_hyb[i] << std::endl;
         }
-        sanity_check(y_coo, y_hyb, "HYB");
+        */
+        
+        sanity_check(y_coo, y_hyb, "HYB", 1e-9);
     }
     
 
@@ -146,11 +162,15 @@ int main() {
         std::cout << "[BCE] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
         
         std::vector<double> y_bce = spmv_bce(A_bce, x);
+        
+        /*
         std::cout << "--- Result y = A * x (Format BCE) ---" << std::endl;
         for (size_t i = 0; i < y_bce.size(); ++i) {
             std::cout << "y[" << i << "] = " << y_bce[i] << std::endl;
         }
-        sanity_check(y_coo, y_bce, "BCE");
+        */
+        
+        sanity_check(y_coo, y_bce, "BCE", 1e-9);
     }
 
     

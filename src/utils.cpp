@@ -72,25 +72,21 @@ void print_coo_matrix(const FormatCOO& coo, int max_elements) {
     std::cout << "--------------------------------------------------------\n" << std::endl;
 }
 
-void sanity_check(const std::vector<double>& y_ref, const std::vector<double>& y_test, const std::string& format_name) {
+void sanity_check(const std::vector<double>& y_ref, const std::vector<double>& y_test, const std::string& format_name, double tol) {
     if (y_ref.size() != y_test.size()) {
         std::cerr << "[" << format_name << " SANITY CHECK FAILED] Size mismatch: "
                   << "expected " << y_ref.size() << ", got " << y_test.size() << std::endl;
+        return;
     }
-    else {
-        bool passed = true;
-        for (size_t i = 0; i < y_ref.size(); ++i) {
-            if (y_ref[i] != y_test[i]) {
-                passed = false;
-                break;
-            }
-        }
     
-        if (passed) {
-            std::cout << "[" << format_name << " SANITY CHECK PASSED]\n";
-        } else {
+    for (size_t i = 0; i < y_ref.size(); ++i) {
+        double diff = std::abs(y_ref[i] - y_test[i]);
+        if (diff > tol) {
             std::cout << "[" << format_name << " SANITY CHECK FAILED]\n";
+            return; 
         }
     }
+
+    std::cout << "[" << format_name << " SANITY CHECK PASSED]\n";
 
 }

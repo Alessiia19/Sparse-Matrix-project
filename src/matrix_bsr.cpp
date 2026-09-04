@@ -49,7 +49,7 @@ FormatBSR convert_coo_to_bsr(const FormatCOO& coo, int block_size) {
 
         // Local index of the element within the block
         int in_block_idx = local_row_idx * block_size + local_col_idx;
-        block_grid[block_row_idx][block_col_idx][in_block_idx] = val;
+        block_grid[block_row_idx][block_col_idx][in_block_idx] += val;
     }
 
     
