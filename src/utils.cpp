@@ -4,6 +4,7 @@
 #include <cmath>
 #include <algorithm> 
 #include <numeric>
+#include "metrics.hpp"
 
 void init_csv(const std::string& csv_filename) {
     std::ofstream file(csv_filename, std::ios::trunc);
@@ -70,6 +71,14 @@ void print_coo_matrix(const FormatCOO& coo, int max_elements) {
                   << " | Val: " << coo.values[i] << std::endl;
     }
     std::cout << "--------------------------------------------------------\n" << std::endl;
+}
+
+void print_result(const std::vector<double>& y, const std::string& format_name) {
+    std::cout << "--- Result y = A * x (Format " << format_name << ") ---\n";
+    for (size_t i = 0; i < y.size(); ++i) {
+        std::cout << "y[" << i << "] = " << y[i] << "\n";
+    }
+    std::cout << "\n";
 }
 
 void sanity_check(const std::vector<double>& y_ref, const std::vector<double>& y_test, const std::string& format_name, double tol) {

@@ -11,171 +11,55 @@
 #include "utils.hpp"
 
 int main() {
-    std::string filename = "west0497.mtx";
-    std::string matrix_label = "west0497";
+    std::string matrix_dir = "matrices/"; 
+    std::string matrix_name = "west0497";  
+    std::string filename = matrix_dir + matrix_name + ".mtx";
+    std::string matrix_label = matrix_name;
     std::string csv_file = "benchmark_results.csv";
 
     init_csv(csv_file);
-
-    // Caricamento Matrice Baseline (COO)
     FormatCOO A_coo = load_mtx(filename);
-
     sort_coo_matrix(A_coo);
     //print_coo_matrix(A_coo);
 
     std::vector<double> x(A_coo.num_cols, 1.0);
+    std::cout << "Matrix " << matrix_label << " loaded: " << A_coo.num_rows << "x" << A_coo.num_cols << ", NNZ = " << A_coo.nnz << "\n\n";
 
-    std::cout << "Matrice " << matrix_label << " caricata: "
-              << A_coo.num_rows << "x" << A_coo.num_cols 
-              << ", NNZ = " << A_coo.nnz << "\n\n";
-    
-    std::vector<double> y_coo;
+    // --- COO ---
+    size_t mem_coo = get_memory_coo(A_coo);
+    auto res_coo = run_benchmark(matrix_label, "COO", mem_coo, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, 1.0, [&](){return spmv_coo(A_coo, x);});
+    append_result_csv(csv_file, res_coo);
+    std::cout << "[COO] Mem: " << res_coo.memory_megabytes << " MB | Time: " << res_coo.time_ms << " ms | GFLOPS: " << res_coo.gflops << "\n";
+    std::vector<double> y_coo = spmv_coo(A_coo, x);
+    //print_result(y_coo, "COO");
 
-    // --- 1. COO BENCHMARK ---
-    {
-        size_t mem = get_memory_coo(A_coo);
-        auto res = run_benchmark(matrix_label, "COO", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, 1.0,
-            [&]() { return spmv_coo(A_coo, x); });
-        append_result_csv(csv_file, res);
-        std::cout << "[COO] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
+    // --- CSR ---
+    FormatCSR A_csr = convert_coo_to_csr(A_coo);
+    test_format(matrix_label, "CSR", get_memory_csr(A_csr), 1.0, A_coo, y_coo, csv_file, [&](){return spmv_csr(A_csr, x);});
+    
+    // --- ELLPACK ---
+    FormatELL A_ell = convert_coo_to_ell(A_coo);
+    double allocation_ratio_ell = static_cast<double>(A_ell.coef.size()) / A_coo.nnz;
+    test_format(matrix_label, "ELLPACK", get_memory_ell(A_ell), allocation_ratio_ell, A_coo, y_coo, csv_file, [&](){return spmv_ell(A_ell, x);});
 
-        y_coo = spmv_coo(A_coo, x);
-        /*
-        std::cout << "--- Result y = A * x (Format COO) ---" << std::endl;
-        for (size_t i = 0; i < y_coo.size(); ++i) {
-            std::cout << "y[" << i << "] = " << y_coo[i] << std::endl;
-        }
-        */
-    }
-    
-        
-    
-    
-    // --- 2. CSR BENCHMARK ---
-    {
-        FormatCSR A_csr = convert_coo_to_csr(A_coo);
-        size_t mem = get_memory_csr(A_csr);
-        auto res = run_benchmark(matrix_label, "CSR", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, 1.0,
-            [&]() { return spmv_csr(A_csr, x); });
-        append_result_csv(csv_file, res);
-        std::cout << "[CSR] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
-        
-        std::vector<double> y_csr = spmv_csr(A_csr, x);
-        
-        /*
-        std::cout << "--- Result y = A * x (Format CSR) ---" << std::endl;
-        for (size_t i = 0; i < y_csr.size(); ++i) {
-            std::cout << "y[" << i << "] = " << y_csr[i] << std::endl;
-        }
-        */
-        
-        sanity_check(y_coo, y_csr, "CSR", 1e-9);
-    }
-
-    
-    // --- 3. ELLPACK BENCHMARK ---
-    {
-        FormatELL A_ell = convert_coo_to_ell(A_coo);
-        size_t mem = get_memory_ell(A_ell);
-        double allocation_ratio = static_cast<double>(A_ell.coef.size()) / A_coo.nnz;
-        auto res = run_benchmark(matrix_label, "ELLPACK", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio,
-        [&]() { return spmv_ell(A_ell, x); });
-        append_result_csv(csv_file, res);
-        std::cout << "[ELL] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
-        
-        std::vector<double> y_ell = spmv_ell(A_ell, x);
-        /*
-        std::cout << "--- Result y = A * x (Format ELL) ---" << std::endl;
-        for (size_t i = 0; i < y_ell.size(); ++i) {
-            std::cout << "y[" << i << "] = " << y_ell[i] << std::endl;
-        }
-        */
-        
-        sanity_check(y_coo, y_ell, "ELL", 1e-9);
-    }
-    
-    
-
-    // --- 4. BSR BENCHMARK ---
-    {
-        int block_size = 4;
-        FormatBSR A_bsr = convert_coo_to_bsr(A_coo, block_size);
-        size_t mem = get_memory_bsr(A_bsr);
-        double allocation_ratio = static_cast<double>(A_bsr.values.size()) / A_coo.nnz;
-        auto res = run_benchmark(matrix_label, "BSR", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio,
-            [&]() { return spmv_bsr(A_bsr, x); });
-        append_result_csv(csv_file, res);
-        std::cout << "[BSR] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
-        
-        std::vector<double> y_bsr = spmv_bsr(A_bsr, x);
-        /*
-        std::cout << "--- Result y = A * x (Format BSR) ---" << std::endl;
-        for (size_t i = 0; i < y_bsr.size(); ++i) {
-            std::cout << "y[" << i << "] = " << y_bsr[i] << std::endl;
-        }
-        */
-        sanity_check(y_coo, y_bsr, "BSR", 1e-9);
-    }
-
-
-    
-    
-    // --- HYB BENCHMARK ---
-    {
-        
+    // --- BSR ---
+    int block_size = 4;
+    FormatBSR A_bsr = convert_coo_to_bsr(A_coo, block_size);
+    double allocation_ratio_bsr = static_cast<double>(A_bsr.values.size()) / A_coo.nnz;
+    test_format(matrix_label, "BSR", get_memory_bsr(A_bsr), allocation_ratio_bsr, A_coo, y_coo, csv_file, [&](){return spmv_bsr(A_bsr, x);});
+     
+    // --- HYB ---
     FormatHYB A_hyb = convert_coo_to_hyb(A_coo);
-        size_t mem = get_memory_ell(A_hyb.ell) + get_memory_coo(A_hyb.coo);
-        
-        size_t total_elements_allocated = A_hyb.ell.coef.size() + A_hyb.coo.values.size();
-        double allocation_ratio = static_cast<double>(total_elements_allocated) / A_coo.nnz;
-        
-        auto res = run_benchmark(matrix_label, "HYB", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio,
-        [&]() { return spmv_hyb(A_hyb, x); });
-        append_result_csv(csv_file, res);
-        
-        std::cout << "[HYB] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
-        
-        std::vector<double> y_hyb = spmv_hyb(A_hyb, x);
-        /*
-        std::cout << "--- Result y = A * x (Format HYB) ---" << std::endl;
-        for (size_t i = 0; i < y_hyb.size(); ++i) {
-            std::cout << "y[" << i << "] = " << y_hyb[i] << std::endl;
-        }
-        */
-        
-        sanity_check(y_coo, y_hyb, "HYB", 1e-9);
-    }
+    size_t mem_hyb = get_memory_ell(A_hyb.ell) + get_memory_coo(A_hyb.coo);
+    double allocation_ratio_hyb = static_cast<double>(A_hyb.ell.coef.size() + A_hyb.coo.values.size()) / A_coo.nnz;
+    test_format(matrix_label, "HYB", mem_hyb, allocation_ratio_hyb, A_coo, y_coo, csv_file, [&](){return spmv_hyb(A_hyb, x);});
     
-
-    // --- BCE BENCHMARK ---
-    {
-        FormatBCE A_bce = convert_coo_to_bce(A_coo);
-        size_t mem = get_memory_ell(A_bce.ell) + get_memory_csr(A_bce.csr);
-        
-        size_t total_elements_allocated = A_bce.ell.coef.size() + A_bce.csr.values.size();
-        double allocation_ratio = static_cast<double>(total_elements_allocated) / A_coo.nnz;
-        
-        auto res = run_benchmark(matrix_label, "BCE", mem, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio,
-            [&]() { return spmv_bce(A_bce, x); });
-        append_result_csv(csv_file, res);
-        
-        std::cout << "[BCE] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
-        
-        std::vector<double> y_bce = spmv_bce(A_bce, x);
-        
-        /*
-        std::cout << "--- Result y = A * x (Format BCE) ---" << std::endl;
-        for (size_t i = 0; i < y_bce.size(); ++i) {
-            std::cout << "y[" << i << "] = " << y_bce[i] << std::endl;
-        }
-        */
-        
-        sanity_check(y_coo, y_bce, "BCE", 1e-9);
-    }
-
+    // --- BCE ---
+    FormatBCE A_bce = convert_coo_to_bce(A_coo);
+    size_t mem_bce = get_memory_ell(A_bce.ell) + get_memory_csr(A_bce.csr);
+    double allocation_ratio_bce = static_cast<double>(A_bce.ell.coef.size() + A_bce.csr.values.size()) / A_coo.nnz;
+    test_format(matrix_label, "BCE", mem_bce, allocation_ratio_bce, A_coo, y_coo, csv_file, [&](){return spmv_bce(A_bce, x);});
     
-
-
-    std::cout << "\nBenchmark completato. Dati salvati in " << csv_file << "\n";
+    std::cout << "\nBenchmark completed. Results saved in " << csv_file << "\n";
     return 0;
 }

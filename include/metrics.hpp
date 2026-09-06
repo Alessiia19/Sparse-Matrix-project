@@ -2,6 +2,7 @@
 #define METRICS_HPP
 
 #include <string>
+#include <iostream>
 #include <vector>
 #include <functional>
 #include "matrix_coo.hpp"
@@ -9,6 +10,8 @@
 #include "matrix_ell.hpp"
 #include "matrix_bsr.hpp"
 #include "matrix_hyb.hpp"
+#include "matrix_bce.hpp"
+#include "utils.hpp"
 
 struct BenchmarkResult {
     std::string matrix;
@@ -37,9 +40,30 @@ BenchmarkResult run_benchmark(const std::string& matrix,
     int num_cols,
     double allocation_ratio,
     std::function<std::vector<double>()> spmv_func,
-    int warmup_iterations = 10,
-    int test_iterations = 20
+    int warmup_iterations = 50,
+    int test_iterations = 500
 );
 
+// Benchmark automation for each format, including sanity check of spmv results
+template <typename SpMVFunc>
+void test_format(
+    const std::string& matrix_label,
+    const std::string& format_name,
+    size_t memory_bytes,
+    double allocation_ratio,
+    const FormatCOO& A_coo,
+    const std::vector<double>& y_ref,
+    const std::string& csv_file,
+    SpMVFunc spmv_fn,
+    double tol = 1e-9) 
+{
+    auto res = run_benchmark(matrix_label, format_name, memory_bytes, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio, spmv_fn);
+
+    append_result_csv(csv_file, res);
+    std::cout << "[" << format_name << "] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
+
+    std::vector<double> y_test = spmv_fn();
+    sanity_check(y_ref, y_test, format_name, tol);
+}
 
 #endif

@@ -2,7 +2,9 @@
 #define UTILS_HPP
 
 #include <string>
-#include "metrics.hpp"
+#include "matrix_coo.hpp"
+
+struct BenchmarkResult;
 
 // CSV export
 void init_csv(const std::string& csv_filename);
@@ -18,5 +20,8 @@ void print_coo_matrix(const FormatCOO& coo, int max_elements = -1);
 
 // Sanity check function to validate SpMV output with COO ground truth
 void sanity_check(const std::vector<double>& y_ref, const std::vector<double>& y_test, const std::string& format_name, double tolerance);
+
+// Print result of spmv
+void print_result(const std::vector<double>& y, const std::string& format_name);
 
 #endif 
