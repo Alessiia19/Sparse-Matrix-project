@@ -59,19 +59,7 @@ void sort_coo_matrix(FormatCOO& coo) {
     coo.row_indices = std::move(sorted_rows);
     coo.col_indices = std::move(sorted_cols);
     coo.values = std::move(sorted_vals);
-}
-
-void print_coo_matrix(const FormatCOO& coo, int max_elements) {
-    int limit = (max_elements < 0 || max_elements > coo.nnz) ? coo.nnz : max_elements;
-
-    std::cout << "--- Print Matrix COO (" << limit << " of " << coo.nnz << " elements) ---" << std::endl;
-    for (int i = 0; i < limit; ++i) {
-        std::cout << "Element " << i << " -> Row: " << coo.row_indices[i]
-                  << " | Col: " << coo.col_indices[i]
-                  << " | Val: " << coo.values[i] << std::endl;
-    }
-    std::cout << "--------------------------------------------------------\n" << std::endl;
-}
+} 
 
 void print_result(const std::vector<double>& y, const std::string& format_name) {
     std::cout << "--- Result y = A * x (Format " << format_name << ") ---\n";

@@ -58,10 +58,7 @@ void test_format(
     double tol = 1e-6) 
 {
     auto res = run_benchmark(matrix_label, format_name, memory_bytes, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio, spmv_fn);
-
     append_result_csv(csv_file, res);
-    std::cout << "[" << format_name << "] Mem: " << res.memory_megabytes << " MB | Time: " << res.time_ms << " ms | GFLOPS: " << res.gflops << "\n";
-
     std::vector<double> y_test = spmv_fn();
     sanity_check(y_ref, y_test, format_name, tol);
 }

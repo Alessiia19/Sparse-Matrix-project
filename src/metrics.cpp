@@ -38,13 +38,13 @@ BenchmarkResult run_benchmark(
 ) {
     // Cache warmup
     for (int i = 0; i < warmup_iterations; ++i) {
-        volatile auto dummy = spmv_func();
+        volatile auto x = spmv_func();
     }
 
     // Average time calculation
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < test_iterations; ++i) {
-        volatile auto dummy = spmv_func();
+        volatile auto x = spmv_func();
     }
     auto end = std::chrono::high_resolution_clock::now();
 

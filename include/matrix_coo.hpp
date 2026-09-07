@@ -4,7 +4,6 @@
 #include <vector>
 #include <string>
 
-//Defines a new custom data type called FormatCOO
 struct FormatCOO {
     int num_rows = 0;
     int num_cols = 0;
@@ -16,7 +15,7 @@ struct FormatCOO {
 };
 
 
-FormatCOO load_mtx(const std::string& filename);
+FormatCOO load_matrix(const std::string& filename);
 std::vector<double> spmv_coo(const FormatCOO& A, const std::vector<double>& x);
 
 #endif

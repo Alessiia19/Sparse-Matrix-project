@@ -16,8 +16,6 @@ int get_k(const FormatCOO& coo);
 // Sort COO matrix in row-major order
 void sort_coo_matrix(FormatCOO& coo);
 
-void print_coo_matrix(const FormatCOO& coo, int max_elements = -1);
-
 // Sanity check function to validate SpMV output with COO ground truth
 void sanity_check(const std::vector<double>& y_ref, const std::vector<double>& y_test, const std::string& format_name, double tolerance);
 

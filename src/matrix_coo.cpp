@@ -3,7 +3,7 @@
 #include <sstream>
 #include <iostream>
 
-FormatCOO load_mtx(const std::string& filename) {
+FormatCOO load_matrix(const std::string& filename) {
     std::ifstream file(filename);
 
     // Check the file availability

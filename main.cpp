@@ -12,24 +12,21 @@
 
 int main() {
     std::string matrix_dir = "matrices/"; 
-    std::string matrix_name = "west";  
+    std::string matrix_name = "test";  
     std::string filename = matrix_dir + matrix_name + ".mtx";
     std::string matrix_label = matrix_name;
     std::string csv_file = "benchmark_results.csv";
 
     init_csv(csv_file);
-    FormatCOO A_coo = load_mtx(filename);
+    FormatCOO A_coo = load_matrix(filename);
     sort_coo_matrix(A_coo);
-    //print_coo_matrix(A_coo);
 
     std::vector<double> x(A_coo.num_cols, 1.0);
     std::cout << "Matrix " << matrix_label << " loaded: " << A_coo.num_rows << "x" << A_coo.num_cols << ", NNZ = " << A_coo.nnz << "\n\n";
 
     // --- COO ---
-    size_t mem_coo = get_memory_coo(A_coo);
-    auto res_coo = run_benchmark(matrix_label, "COO", mem_coo, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, 1.0, [&](){return spmv_coo(A_coo, x);});
+    auto res_coo = run_benchmark(matrix_label, "COO", get_memory_coo(A_coo), A_coo.nnz, A_coo.num_rows, A_coo.num_cols, 1.0, [&](){return spmv_coo(A_coo, x);});
     append_result_csv(csv_file, res_coo);
-    std::cout << "[COO] Mem: " << res_coo.memory_megabytes << " MB | Time: " << res_coo.time_ms << " ms | GFLOPS: " << res_coo.gflops << "\n";
     std::vector<double> y_coo = spmv_coo(A_coo, x);
     //print_result(y_coo, "COO");
 
@@ -40,7 +37,7 @@ int main() {
     // --- ELLPACK ---
     FormatELL A_ell = convert_coo_to_ell(A_coo);
     double allocation_ratio_ell = static_cast<double>(A_ell.coef.size()) / A_coo.nnz;
-    test_format(matrix_label, "ELLPACK", get_memory_ell(A_ell), allocation_ratio_ell, A_coo, y_coo, csv_file, [&](){return spmv_ell(A_ell, x);});
+    test_format(matrix_label, "ELL", get_memory_ell(A_ell), allocation_ratio_ell, A_coo, y_coo, csv_file, [&](){return spmv_ell(A_ell, x);});
 
     // --- BSR ---
     int block_size = 2;
