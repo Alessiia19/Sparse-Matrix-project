@@ -12,7 +12,7 @@
 
 int main() {
     std::string matrix_dir = "matrices/"; 
-    std::string matrix_name = "west0497";  
+    std::string matrix_name = "west";  
     std::string filename = matrix_dir + matrix_name + ".mtx";
     std::string matrix_label = matrix_name;
     std::string csv_file = "benchmark_results.csv";
@@ -43,7 +43,7 @@ int main() {
     test_format(matrix_label, "ELLPACK", get_memory_ell(A_ell), allocation_ratio_ell, A_coo, y_coo, csv_file, [&](){return spmv_ell(A_ell, x);});
 
     // --- BSR ---
-    int block_size = 4;
+    int block_size = 2;
     FormatBSR A_bsr = convert_coo_to_bsr(A_coo, block_size);
     double allocation_ratio_bsr = static_cast<double>(A_bsr.values.size()) / A_coo.nnz;
     test_format(matrix_label, "BSR", get_memory_bsr(A_bsr), allocation_ratio_bsr, A_coo, y_coo, csv_file, [&](){return spmv_bsr(A_bsr, x);});

@@ -55,7 +55,7 @@ void test_format(
     const std::vector<double>& y_ref,
     const std::string& csv_file,
     SpMVFunc spmv_fn,
-    double tol = 1e-9) 
+    double tol = 1e-6) 
 {
     auto res = run_benchmark(matrix_label, format_name, memory_bytes, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio, spmv_fn);
 

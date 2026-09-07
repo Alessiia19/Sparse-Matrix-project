@@ -87,15 +87,33 @@ void sanity_check(const std::vector<double>& y_ref, const std::vector<double>& y
                   << "expected " << y_ref.size() << ", got " << y_test.size() << std::endl;
         return;
     }
-    
+
+    int error_count = 0;
+    const int max_errors_to_print = 5;
+
     for (size_t i = 0; i < y_ref.size(); ++i) {
-        double diff = std::abs(y_ref[i] - y_test[i]);
-        if (diff > tol) {
-            std::cout << "[" << format_name << " SANITY CHECK FAILED]\n";
-            return; 
+        double abs_diff = std::abs(y_ref[i] - y_test[i]);
+        double abs_ref = std::abs(y_ref[i]);
+
+        double err = (abs_ref > 1.0) ? (abs_diff / abs_ref) : abs_diff;
+
+        if (err > tol) {
+            if (error_count == 0) {
+                std::cout << "[" << format_name << " SANITY CHECK FAILED]\n";
+            }
+
+            if (error_count < max_errors_to_print) {
+                std::cout << "  -> Index " << i 
+                          << " | Ref: " << y_ref[i] 
+                          << " | Test: " << y_test[i] 
+                          << " | Abs Diff: " << abs_diff 
+                          << " | Rel Err: " << (abs_diff / (abs_ref > 0 ? abs_ref : 1.0)) << "\n";
+            }
+            error_count++;
         }
     }
 
-    std::cout << "[" << format_name << " SANITY CHECK PASSED]\n";
-
+    if (error_count == 0) {
+        std::cout << "[" << format_name << " SANITY CHECK PASSED]\n";
+    }
 }

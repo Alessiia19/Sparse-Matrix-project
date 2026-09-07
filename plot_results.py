@@ -5,54 +5,55 @@ import seaborn as sns
 
 def plot_single_matrix_results(csv_filepath="benchmark_results.csv", output_dir="plots"):
     if not os.path.exists(csv_filepath):
-        print(f"Errore: File '{csv_filepath}' non trovato. Esegui prima il programma C++.")
+        print(f"Error: File '{csv_filepath}' not found.")
         return
 
     os.makedirs(output_dir, exist_ok=True)
     df = pd.read_csv(csv_filepath)
 
-    # Identifica il nome della matrice presente nel CSV
     matrix_name = df["Matrix"].iloc[0]
 
     col_format = "Format"
     col_memory = "Memory_MB"
     col_ratio = "Allocation_Ratio"
+    col_bandwidth = "Bandwidth_GBs"
+    col_gflops = "GFLOPS"
+    col_time = "Time_ms"
 
     sns.set_theme(style="whitegrid")
-    palette = sns.color_palette("Set2")
+    palette = sns.color_palette("Set2", len(df))
 
-    # ---------------------------------------------------------
-    # 1. GRAFICO MEMORIA OCCUPATA (MB) PER LA MATRICE
-    # ---------------------------------------------------------
-    plt.figure(figsize=(9, 5))
-    ax = sns.barplot(
-        data=df,
-        x=col_format,
-        y=col_memory,
-        hue=col_format,
-        palette=palette
-    )
     
-    # Rimuove la legenda in modo compatibile con tutte le versioni di Seaborn
-    if ax.get_legend() is not None:
-        ax.get_legend().remove()
+    # Allocated Memory Chart (MB)
 
-    plt.title(f"Occupazione di Memoria - Matrice: {matrix_name}", fontsize=14, fontweight='bold', pad=15)
-    plt.xlabel("Formato Matrice", fontsize=12, fontweight='bold')
-    plt.ylabel("Memoria Occupata (MB)", fontsize=12, fontweight='bold')
-    plt.xticks(rotation=20)
+    plt.figure(figsize=(7, 4.5))
+    bars = plt.bar(
+        df[col_format],
+        df[col_memory],
+        color=palette,
+        width=0.55,
+        align='center'
+    )
 
-    # Annotazioni numeriche sopra le barre
-    for p in ax.patches:
-        height = p.get_height()
+    plt.title(f"Memory Consumption - Matrix: {matrix_name}", fontsize=12, fontweight='bold', pad=12)
+    plt.xlabel("Matrix Format", fontsize=10, fontweight='bold', labelpad=8)
+    plt.ylabel("Allocated Memory (MB)", fontsize=10, fontweight='bold', labelpad=8)
+    plt.xticks(fontsize=9.5)
+    plt.yticks(fontsize=9)
+
+    y_max = df[col_memory].max()
+    plt.ylim(0, y_max * 1.15)
+
+    for bar in bars:
+        height = bar.get_height()
         if not pd.isna(height) and height > 0:
             label = f"{height:.3f}" if height < 1.0 else f"{height:.2f}"
-            ax.annotate(
+            plt.annotate(
                 label,
-                (p.get_x() + p.get_width() / 2., height),
+                (bar.get_x() + bar.get_width() / 2., height),
                 ha='center', va='bottom',
-                fontsize=9, fontweight='bold',
-                xytext=(0, 4),
+                fontsize=8.5, fontweight='bold',
+                xytext=(0, 3),
                 textcoords='offset points'
             )
 
@@ -60,11 +61,11 @@ def plot_single_matrix_results(csv_filepath="benchmark_results.csv", output_dir=
     chart_path = os.path.join(output_dir, f"memory_{matrix_name}.png")
     plt.savefig(chart_path, dpi=300)
     plt.close()
-    print(f"[OK] Grafico memoria salvato: {chart_path}")
+    print(f"[OK] Memory chart saved: {chart_path}")
 
-    # ---------------------------------------------------------
-    # 2. TABELLA GRAFICA ALLOCATION RATIO
-    # ---------------------------------------------------------
+    
+    # Allocation Ratio Chart
+
     fig_tbl, ax_tbl = plt.subplots(figsize=(6, 3.5))
     ax_tbl.axis('off')
 
@@ -73,7 +74,7 @@ def plot_single_matrix_results(csv_filepath="benchmark_results.csv", output_dir=
 
     table = ax_tbl.table(
         cellText=table_data.values,
-        colLabels=["Formato", "Allocation Ratio"],
+        colLabels=["Format", "Allocation Ratio"],
         loc='center',
         cellLoc='center'
     )
@@ -81,7 +82,6 @@ def plot_single_matrix_results(csv_filepath="benchmark_results.csv", output_dir=
     table.set_fontsize(10)
     table.scale(1.2, 1.6)
 
-    # Styling dell'intestazione e della prima colonna
     for (r, c), cell in table.get_celld().items():
         if r == 0:
             cell.set_facecolor('#2c3e50')
@@ -91,14 +91,127 @@ def plot_single_matrix_results(csv_filepath="benchmark_results.csv", output_dir=
             cell.set_facecolor('#ecf0f1')
             cell.get_text().set_weight('bold')
 
-    plt.title(f"Allocation Ratio - Matrice: {matrix_name}", fontsize=13, fontweight='bold', pad=10)
-    table_path = os.path.join(output_dir, f"table_ratio_{matrix_name}.png")
+    plt.title(f"Allocation Ratio - Matrix: {matrix_name}", fontsize=13, fontweight='bold', pad=10)
+    table_path = os.path.join(output_dir, f"allocation_ratio_{matrix_name}.png")
     plt.savefig(table_path, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"[OK] Immagine tabella salvata: {table_path}")
+    print(f"[OK] Allocation Ratio table saved: {table_path}")
 
-    print(f"\n--- ALLOCATION RATIO per {matrix_name} ---")
-    print(table_data.to_string(index=False))
+    
+    # Bandwidth Chart (GB/s)
+    
+    plt.figure(figsize=(7, 4.5))
+
+    bars_bw = plt.bar(
+        df[col_format],
+        df[col_bandwidth],
+        color=palette,
+        width=0.55,
+        align='center'
+    )
+
+    plt.title(f"Effective Memory Bandwidth - Matrix: {matrix_name}", fontsize=12, fontweight='bold', pad=12)
+    plt.xlabel("Matrix Format", fontsize=10, fontweight='bold', labelpad=8)
+    plt.ylabel("Bandwidth (GB/s)", fontsize=10, fontweight='bold', labelpad=8)
+    plt.xticks(fontsize=9.5)
+    plt.yticks(fontsize=9)
+
+    bw_max = df[col_bandwidth].max()
+    plt.ylim(0, bw_max * 1.15)
+
+    for bar in bars_bw:
+        height = bar.get_height()
+        if not pd.isna(height) and height > 0:
+            plt.annotate(
+                f"{height:.2f}",
+                (bar.get_x() + bar.get_width() / 2., height),
+                ha='center', va='bottom',
+                fontsize=8.5, fontweight='bold',
+                xytext=(0, 3),
+                textcoords='offset points'
+            )
+
+    plt.tight_layout()
+    bw_chart_path = os.path.join(output_dir, f"bandwidth_{matrix_name}.png")
+    plt.savefig(bw_chart_path, dpi=300)
+    plt.close()
+    print(f"[OK] Bandwidth chart saved: {bw_chart_path}")
+
+    
+    # GFLOPS Chart
+    
+    plt.figure(figsize=(7, 4.5))
+
+    bars_gflops = plt.bar(
+        df[col_format],
+        df[col_gflops],
+        color=palette,
+        width=0.55,
+        align='center'
+    )
+
+    plt.title(f"Computational Throughput - Matrix: {matrix_name}", fontsize=12, fontweight='bold', pad=12)
+    plt.xlabel("Matrix Format", fontsize=10, fontweight='bold', labelpad=8)
+    plt.ylabel("Performance (GFLOPS)", fontsize=10, fontweight='bold', labelpad=8)
+    plt.xticks(fontsize=9.5)
+    plt.yticks(fontsize=9)
+
+    gflops_max = df[col_gflops].max()
+    plt.ylim(0, gflops_max * 1.15)
+
+    for bar in bars_gflops:
+        height = bar.get_height()
+        if not pd.isna(height) and height > 0:
+            label = f"{height:.3f}" if height < 1.0 else f"{height:.2f}"
+            plt.annotate(
+                label,
+                (bar.get_x() + bar.get_width() / 2., height),
+                ha='center', va='bottom',
+                fontsize=8.5, fontweight='bold',
+                xytext=(0, 3),
+                textcoords='offset points'
+            )
+
+    plt.tight_layout()
+    gflops_chart_path = os.path.join(output_dir, f"gflops_{matrix_name}.png")
+    plt.savefig(gflops_chart_path, dpi=300)
+    plt.close()
+    print(f"[OK] GFLOPS chart saved: {gflops_chart_path}")
+
+    
+    # Average Time Chart (ms)
+    
+    fig_tbl_time, ax_tbl_time = plt.subplots(figsize=(6, 3.5))
+    ax_tbl_time.axis('off')
+
+    table_time_data = df[[col_format, col_time]].copy()
+    table_time_data[col_time] = table_time_data[col_time].map('{:.4f}'.format)
+
+    table_time = ax_tbl_time.table(
+        cellText=table_time_data.values,
+        colLabels=["Format", "Average Time (ms)"],
+        loc='center',
+        cellLoc='center'
+    )
+    table_time.auto_set_font_size(False)
+    table_time.set_fontsize(10)
+    table_time.scale(1.2, 1.6)
+
+    for (r, c), cell in table_time.get_celld().items():
+        if r == 0:
+            cell.set_facecolor('#2c3e50')
+            cell.get_text().set_color('white')
+            cell.get_text().set_weight('bold')
+        elif c == 0:
+            cell.set_facecolor('#ecf0f1')
+            cell.get_text().set_weight('bold')
+
+    plt.title(f"Execution Time - Matrix: {matrix_name}", fontsize=13, fontweight='bold', pad=10)
+    table_time_path = os.path.join(output_dir, f"time_{matrix_name}.png")
+    plt.savefig(table_time_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"[OK] Execution Time table saved: {table_time_path}")
+
 
 if __name__ == "__main__":
-    plot_single_matrix_results()
+    plot_single_matrix_results(csv_filepath="benchmark_results.csv")
