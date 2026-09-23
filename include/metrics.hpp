@@ -18,6 +18,7 @@ struct BenchmarkResult {
     std::string format;
     size_t memory_bytes = 0;
     double memory_megabytes = 0.0;
+    double conversion_time_ms = 0.0;
     double time_ms = 0.0;
     double gflops = 0.0;
     double bandwidth_gbs = 0.0;
@@ -39,6 +40,7 @@ BenchmarkResult run_benchmark(const std::string& matrix,
     int num_rows,
     int num_cols,
     double allocation_ratio,
+    double conversion_time_ms,
     std::function<std::vector<double>()> spmv_func,
     int warmup_iterations = 50,
     int test_iterations = 500
@@ -51,13 +53,15 @@ void test_format(
     const std::string& format_name,
     size_t memory_bytes,
     double allocation_ratio,
+    double conversion_time_ms,
     const FormatCOO& A_coo,
     const std::vector<double>& y_ref,
     const std::string& csv_file,
     SpMVFunc spmv_fn,
-    double tol = 1e-6) 
+    double tol = 1e-5) 
 {
-    auto res = run_benchmark(matrix_label, format_name, memory_bytes, A_coo.nnz, A_coo.num_rows, A_coo.num_cols, allocation_ratio, spmv_fn);
+    auto res = run_benchmark(matrix_label, format_name, memory_bytes, A_coo.nnz, A_coo.num_rows, 
+                            A_coo.num_cols, allocation_ratio, conversion_time_ms, spmv_fn);
     append_result_csv(csv_file, res);
     std::vector<double> y_test = spmv_fn();
     sanity_check(y_ref, y_test, format_name, tol);

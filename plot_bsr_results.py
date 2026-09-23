@@ -4,9 +4,7 @@ import pandas as pd
 import seaborn as sns
 
 
-def plot_bsr_metrics(
-    csv_filename="bsr_benchmark_results.csv", output_dir="bsr_plots"
-):
+def plot_bsr_metrics(csv_filename="bsr_benchmark_results.csv", output_dir="bsr_plots"):
     if not os.path.exists(csv_filename):
         print(f"Error: File {csv_filename} does not exist.")
         return
@@ -15,44 +13,46 @@ def plot_bsr_metrics(
 
     df = pd.read_csv(csv_filename)
     sns.set_theme(style="whitegrid")
-    palette = [
-        "#3f51b5",
-        "#009688",
-        "#4caf50",
-    ]  
+    palette = ["#3f51b5","#009688","#4caf50","#fdcd3d","#ff2f94"]  
 
     metrics = [
         (
             "Time_ms",
             "Execution Time (ms)",
             "Time (ms)",
-            "bsr_time_comparison.png",
-        ),
+            "bsr_time.png",
+            ),
         (
             "GFLOPS",
             "Computational Throughput (GFLOPS)",
             "GFLOPS",
-            "bsr_gflops_comparison.png",
-        ),
+            "bsr_gflops.png",
+            ),
         (
             "Bandwidth_GBs",
             "Effective Memory Bandwidth (GB/s)",
             "Bandwidth (GB/s)",
-            "bsr_bandwidth_comparison.png",
-        ),
+            "bsr_bandwidth.png",
+            ),
         (
             "Allocation_Ratio",
             "Allocation Ratio",
             "Allocation Ratio",
-            "bsr_allocation_ratio_comparison.png",
-        ),
+            "bsr_allocation_ratio.png",
+            ),
+        (
+            "Conversion_Time_ms",
+            "Conversion Time (ms)",
+            "Conversion Time (ms)",
+            "bsr_conversion_time.png",
+            ),
         (
             "Memory_MB",
             "Memory Consumption (MB)",
             "Allocated Memory (MB)",
-            "bsr_memory_comparison.png",
-        ),
-    ]
+            "bsr_memory.png",
+            ),
+        ]
 
     for col_name, chart_title, y_label, file_name in metrics:
         fig, ax = plt.subplots(figsize=(9, 5.5))
@@ -68,15 +68,8 @@ def plot_bsr_metrics(
             linewidth=0.6,
         )
 
-        plt.title(
-            f"BSR Performance: {chart_title}",
-            fontsize=13,
-            fontweight="bold",
-            pad=12,
-        )
-        plt.xlabel(
-            "Test Matrix", fontsize=11, fontweight="bold", labelpad=8
-        )
+        plt.title(f"BSR Performance: {chart_title}",fontsize=13,fontweight="bold",pad=12)
+        plt.xlabel("Test Matrix", fontsize=11, fontweight="bold", labelpad=8)
         plt.ylabel(y_label, fontsize=11, fontweight="bold", labelpad=8)
         plt.xticks(fontsize=10)
         plt.yticks(fontsize=10)
@@ -105,12 +98,7 @@ def plot_bsr_metrics(
                     textcoords="offset points",
                 )
 
-        plt.legend(
-            title="Block Size",
-            title_fontsize="10",
-            fontsize="9",
-            loc="upper left",
-        )
+        plt.legend(title="Block Size",title_fontsize="10",fontsize="9",loc="upper left")
         plt.tight_layout()
 
         output_path = os.path.join(output_dir, file_name)

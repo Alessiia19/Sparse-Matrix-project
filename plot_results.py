@@ -19,6 +19,7 @@ def plot_single_matrix_results(csv_filepath="benchmark_results.csv", output_dir=
     col_bandwidth = "Bandwidth_GBs"
     col_gflops = "GFLOPS"
     col_time = "Time_ms"
+    col_conv_time = "Conversion_Time_ms"
 
     sns.set_theme(style="whitegrid")
     palette = sns.color_palette("Set2", len(df))
@@ -211,6 +212,47 @@ def plot_single_matrix_results(csv_filepath="benchmark_results.csv", output_dir=
     plt.savefig(table_time_path, dpi=300, bbox_inches='tight')
     plt.close()
     print(f"[OK] Execution Time table saved: {table_time_path}")
+
+    # Conversion Time Table (ms)
+    fig_tbl_conv, ax_tbl_conv = plt.subplots(figsize=(6, 3.5))
+    ax_tbl_conv.axis("off")
+
+    table_conv_data = df[[col_format, col_conv_time]].copy()
+    table_conv_data[col_conv_time] = table_conv_data[col_conv_time].map(
+        lambda x: f"{x:.2f}" if x >= 100.0 else f"{x:.3f}"
+    )
+
+    table_conv = ax_tbl_conv.table(
+        cellText=table_conv_data.values,
+        colLabels=["Format", "Conversion Time (ms)"],
+        loc="center",
+        cellLoc="center",
+    )
+    table_conv.auto_set_font_size(False)
+    table_conv.set_fontsize(10)
+    table_conv.scale(1.2, 1.6)
+
+    for (r, c), cell in table_conv.get_celld().items():
+        if r == 0:
+            cell.set_facecolor("#2c3e50")
+            cell.get_text().set_color("white")
+            cell.get_text().set_weight("bold")
+        elif c == 0:
+            cell.set_facecolor("#ecf0f1")
+            cell.get_text().set_weight("bold")
+
+    plt.title(
+        f"Conversion Time - Matrix: {matrix_name}",
+        fontsize=13,
+        fontweight="bold",
+        pad=10,
+    )
+    conv_table_path = os.path.join(
+        output_dir, f"conversion_time_{matrix_name}.png"
+    )
+    plt.savefig(conv_table_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    print(f"[OK] Conversion Time table saved: {conv_table_path}")
 
 
 if __name__ == "__main__":

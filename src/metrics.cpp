@@ -32,6 +32,7 @@ BenchmarkResult run_benchmark(
     int num_rows,
     int num_cols,
     double allocation_ratio,
+    double conversion_time_ms,
     std::function<std::vector<double>()> spmv_func,
     int warmup_iterations,
     int test_iterations
@@ -65,6 +66,7 @@ BenchmarkResult run_benchmark(
     res.format = format;
     res.memory_bytes = memory_bytes;
     res.memory_megabytes = static_cast<double>(memory_bytes) / (1024.0 * 1024.0);
+    res.conversion_time_ms = conversion_time_ms;
     res.time_ms = avg_time_ms;
     res.gflops = gflops;
     res.bandwidth_gbs = bandwidth_gbs;
