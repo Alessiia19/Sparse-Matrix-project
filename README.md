@@ -9,7 +9,18 @@ The project evaluates the following formats:
 We evaluate performance using datasets from the **SuiteSparse Matrix Collection**:
 * `wiki-Vote`
 * `west0497`
+* `shipsec1`
+* `amazon0302`
+* `cnr-2000`
 * `bmw3_2`
+
+## Metrics
+* **Memory Consumption (MB)**
+* **Allocation Ratio**
+* **Execution Time (ms)**
+* **Conversion Time (ms)**
+* **GFLOPS**
+* **Bandwidth**
 
 ## Building and Running
 To compile and execute the benchmark:
